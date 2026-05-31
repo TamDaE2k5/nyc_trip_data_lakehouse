@@ -1,25 +1,31 @@
 import sys
 import os
-from pyspark.sql.functions import input_file_name, current_timestamp, date_format, lit
+from pyspark.sql.functions import input_file_name, current_timestamp, date_format, lit, col
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.spark_session import getOrCreateSparkSession
 
 def ingest_green():
+    x, y = sys.argv[1].split('-') # 2026-06
+    year = int(x)
+    month = int(y)
+
+    month -= 4
+    if month == 0:
+        month = 12
+        year -= 1
+    process_month = f"{year}-{month:02d}" # 2026-05
+
     spark = getOrCreateSparkSession()
 
     data_path = os.environ.get("DATA_DIR", "/app/data")
-    green_pattern = os.path.join(data_path, "green", "green_tripdata_*.parquet")
+    green_pattern = os.path.join(data_path, "green", f"green_tripdata_{process_month}.parquet")
 
     import glob #scan files
     files = glob.glob(green_pattern)
     if not files:
-        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data")
-        green_pattern = os.path.join(local_path, "green", "green_tripdata_*.parquet")
-        files = glob.glob(green_pattern)
-    if not files:
         print('[Error]: FILE not FOUND')
-        sys.exit(1)
+        sys.exit(99)
     
     for f in files:
         df = spark.read.parquet(f)
@@ -40,7 +46,8 @@ def ingest_green():
                 df_meta = df_meta.withColumn(col_name, lit(None).cast("double" if col_name == "ehail_fee" else "string"))
 
         df_final = df_meta.select(*target_columns)
+        df_final = df_final.filter(col('pickup_month') == process_month)
         df_final.writeTo("bronze.green_trips").append()
-
+        # df_final.writeTo("bronze.green_trips").overwritePartitions() -> use -> fix incremental processing
 if __name__ =='__main__':
     ingest_green()

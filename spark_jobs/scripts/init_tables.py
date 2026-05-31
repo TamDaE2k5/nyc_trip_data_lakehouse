@@ -106,7 +106,7 @@ def init_tables_lakehouse():
         is_weekend              BOOLEAN,
         pickup_month            STRING
     ) USING iceberg
-    PARTITIONED BY (taxi_type, pickup_month)
+    PARTITIONED BY (pickup_month)
     """)
 
     spark.sql("""

@@ -42,6 +42,26 @@ def create_spark_task(task_id, script_path, dag):
             Mount(source=f"{HOST_PATH}/data", target="/app/data", type="bind")
         ],
         environment=SPARK_ENV,
+        skip_on_exit_code=99,
+        mount_tmp_dir=False,  # CRITICAL for Windows/WSL Compatibility
+        dag=dag
+    )
+
+def create_spark_monthly_task(task_id, script_path, dag):
+    return DockerOperator(
+        task_id=task_id,
+        image=SPARK_IMAGE,
+        command= (f"/opt/spark/bin/spark-submit --driver-memory 2g --master local[*] /app/spark_jobs/{script_path}"
+                  f" {{{{ ds[:7] }}}}"),  # yyyy-MM => incremental processing 
+        api_version='auto',
+        auto_remove=True,
+        network_mode='lakehouse-net',
+        mounts=[
+            Mount(source=f"{HOST_PATH}/spark_jobs", target="/app/spark_jobs", type="bind"),
+            Mount(source=f"{HOST_PATH}/data", target="/app/data", type="bind")
+        ],
+        skip_on_exit_code=99,
+        environment=SPARK_ENV,
         mount_tmp_dir=False,  # CRITICAL for Windows/WSL Compatibility
         dag=dag
     )
@@ -55,10 +75,23 @@ with DAG(
     catchup=False,
     tags=['lakehouse'],
 ) as dag:
+    
+    # init_tables -> [ingestion] -> transform_trip -> [load_zones, transform_rate_history]
+
     init_tables = create_spark_task('init_tables', 'scripts/init_tables.py', dag)
 
-    ingest_green = create_spark_task('ingest_green', 'bronze/in_green.py', dag)
-    ingest_yellow = create_spark_task('ingest_yellow', 'bronze/in_yellow.py', dag)
+    ingest_green = create_spark_monthly_task('ingest_green', 'bronze/in_green.py', dag)
+    ingest_yellow = create_spark_monthly_task('ingest_yellow', 'bronze/in_yellow.py', dag)
+
+    transform_trips = create_spark_monthly_task('transform_trips', 'silver/transform_trips.py', dag)
+    # load_zones = create_spark_monthly_task('load_zones', 'silver/load_zones.py', dag)
+    # transform_rate_history = create_spark_task('transform_rate_history', 'silver/transform_rate_history.py', dag)
 
     init_tables >> ingest_green
     init_tables >> ingest_yellow
+
+    ingest_green >> transform_trips
+    ingest_yellow >> transform_trips
+    # transform_trip >> load_zones
+    # transform_trip >> transform_rate_history
+

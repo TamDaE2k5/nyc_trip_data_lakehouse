@@ -151,6 +151,20 @@ services:
     networks:
       - lakehouse-net
 
+  trino:
+    image: trinodb/trino:443
+    container_name: trino
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./trino/catalog:/etc/trino/catalog
+      - ./trino/jvm.config:/etc/trino/jvm.config
+    depends_on:
+      iceberg-rest:
+        condition: service_healthy
+    networks:
+      - lakehouse-net
+
 volumes:
   postgres_data:
   minio_data:
