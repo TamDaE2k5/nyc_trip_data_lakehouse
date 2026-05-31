@@ -52,11 +52,11 @@ services:
       /bin/sh -c "
       until (/usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin) do echo 'Waiting for MinIO...' && sleep 1; done;
       /usr/bin/mc mb --ignore-existing myminio/warehouse;
-      /usr/bin/mc mb --ignore-existing myminio/raw-data;
+      /usr/bin/mc mb --ignore-existing myminio/data;
       echo 'Uploading data to MinIO bucket data...';
-      /usr/bin/mc cp --recursive /data/yellow/ myminio/raw-data/yellow/;
-      /usr/bin/mc cp --recursive /data/green/ myminio/raw-data/green/;
-      /usr/bin/mc cp --recursive /data/lookup/ myminio/raw-data/lookup/;
+      /usr/bin/mc cp --recursive /data/yellow/ myminio/data/yellow/;
+      /usr/bin/mc cp --recursive /data/green/ myminio/data/green/;
+      /usr/bin/mc cp --recursive /data/lookup/ myminio/data/lookup/;
       echo 'Upload complete!';
       exit 0;
       "
@@ -109,7 +109,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
     volumes:
       - ../dags:/opt/airflow/dags
-      # - ../spark_jobs:/app/spark_jobs
+      - ../spark_jobs:/app/spark_jobs
       - ../data:/app/data
       - ./airflow/entrypoint.sh:/entrypoint.sh
       - /var/run/docker.sock:/var/run/docker.sock
@@ -136,7 +136,7 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
     volumes:
       - ../dags:/opt/airflow/dags
-      # - ../spark_jobs:/app/spark_jobs
+      - ../spark_jobs:/app/spark_jobs
       - ../data:/app/data
       - ./airflow/entrypoint.sh:/entrypoint.sh
       - /var/run/docker.sock:/var/run/docker.sock

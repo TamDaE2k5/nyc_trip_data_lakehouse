@@ -55,6 +55,10 @@ with DAG(
     catchup=False,
     tags=['lakehouse'],
 ) as dag:
-    test_job = create_spark_task('test_job', 'scripts/test_job.py', dag)
+    init_tables = create_spark_task('init_tables', 'scripts/init_tables.py', dag)
 
-    test_job
+    ingest_green = create_spark_task('ingest_green', 'bronze/in_green.py', dag)
+    ingest_yellow = create_spark_task('ingest_yellow', 'bronze/in_yellow.py', dag)
+
+    init_tables >> ingest_green
+    init_tables >> ingest_yellow
