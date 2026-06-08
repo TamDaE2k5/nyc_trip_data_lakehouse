@@ -27,7 +27,9 @@ SPARK_ENV = {
 SPARK_IMAGE = os.environ.get("SPARK_IMAGE_NAME", "lakehouse-spark:latest")
 
 # Host project path for mounting folders (must reflect the host path for Docker daemon)
-HOST_PATH = os.environ.get("HOST_PROJECT_PATH", "D:/Source code/taxi_lakehouse")
+HOST_PATH = os.environ.get("HOST_PROJECT_PATH")
+if not HOST_PATH or HOST_PATH.strip() == "":
+    HOST_PATH = "/run/media/tamdae/Data/Source code/taxi_lakehouse"
 
 def create_spark_task(task_id, script_path, dag):
     return DockerOperator(
@@ -84,14 +86,20 @@ with DAG(
     ingest_yellow = create_spark_monthly_task('ingest_yellow', 'bronze/in_yellow.py', dag)
 
     transform_trips = create_spark_monthly_task('transform_trips', 'silver/transform_trips.py', dag)
-    # load_zones = create_spark_monthly_task('load_zones', 'silver/load_zones.py', dag)
-    # transform_rate_history = create_spark_task('transform_rate_history', 'silver/transform_rate_history.py', dag)
+    load_zones = create_spark_task('load_zones', 'silver/load_zones.py', dag)
+    transform_rate_history = create_spark_task('transform_rate_history', 'silver/transform_rate_history.py', dag)
+    load_payment_types = create_spark_task('load_payment_types', 'silver/load_payment_types.py', dag)
+    load_rate_codes = create_spark_task('load_rate_codes', 'silver/load_rate_codes.py', dag)
+
 
     init_tables >> ingest_green
     init_tables >> ingest_yellow
 
     ingest_green >> transform_trips
     ingest_yellow >> transform_trips
-    # transform_trip >> load_zones
-    # transform_trip >> transform_rate_history
+
+    transform_trips >> load_zones
+    transform_trips >> transform_rate_history
+    transform_trips >> load_payment_types
+    transform_trips >> load_rate_codes
 

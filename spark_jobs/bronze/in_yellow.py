@@ -12,8 +12,8 @@ def ingest_yellow():
     month = int(y)
 
     month -= 4
-    if month == 0:
-        month = 12
+    if month <= 0:
+        month += 12
         year -= 1
     process_month = f"{year}-{month:02d}" # 2026-05
 

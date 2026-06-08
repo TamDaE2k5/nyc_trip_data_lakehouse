@@ -89,7 +89,6 @@ def init_tables_lakehouse():
         pu_location_id          INT,
         do_location_id          INT,
         payment_type            INT,
-        payment_type_desc       STRING,
         fare_amount             DOUBLE,
         extra                   DOUBLE,
         mta_tax                 DOUBLE,
@@ -133,7 +132,43 @@ def init_tables_lakehouse():
     ) USING iceberg
     """)
 
-    
+    # Create and seed silver.dim_payment_types
+    spark.sql("""
+    CREATE TABLE IF NOT EXISTS silver.dim_payment_types (
+        payment_type_id         INT,
+        payment_type_desc       STRING
+    ) USING iceberg
+    """)
+
+    if spark.table("silver.dim_payment_types").count() == 0:
+        spark.sql("""
+        INSERT INTO silver.dim_payment_types VALUES
+        (1, 'Credit card'),
+        (2, 'Cash'),
+        (3, 'No charge'),
+        (4, 'Dispute'),
+        (5, 'Unknown'),
+        (6, 'Voided trip')
+        """)
+
+    # Create and seed silver.dim_rate_codes
+    spark.sql("""
+    CREATE TABLE IF NOT EXISTS silver.dim_rate_codes (
+        rate_code_id            INT,
+        rate_code_desc          STRING
+    ) USING iceberg
+    """)
+
+    if spark.table("silver.dim_rate_codes").count() == 0:
+        spark.sql("""
+        INSERT INTO silver.dim_rate_codes VALUES
+        (1, 'Standard rate'),
+        (2, 'JFK'),
+        (3, 'Newark'),
+        (4, 'Nassau or Westchester'),
+        (5, 'Negotiated fare'),
+        (6, 'Group ride')
+        """)
 
 
 if __name__ == '__main__':

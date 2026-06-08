@@ -18,8 +18,8 @@ def transform_trips():
         month = int(y)
 
         month -= 4
-        if month == 0:
-            month = 12
+        if month <= 0:
+            month += 12
             year -= 1
         process_month = f"{year}-{month:02d}" # 2026-05
 
@@ -109,14 +109,7 @@ def transform_trips():
         .withColumn("pickup_hour", hour(col("pickup_datetime"))) \
         .withColumn("pickup_day_of_week", ((dayofweek(col("pickup_datetime")) + 5) % 7) + 1) \
         .withColumn("is_weekend", col("pickup_day_of_week").isin(6, 7)) \
-        .withColumn("pickup_month", date_format(col("pickup_datetime"), "yyyy-MM")) \
-        .withColumn("payment_type_desc", 
-            when(col("payment_type") == 1, lit("Credit Card"))
-            .when(col("payment_type") == 2, lit("Cash"))
-            .when(col("payment_type") == 3, lit("No Charge"))
-            .when(col("payment_type") == 4, lit("Dispute"))
-            .otherwise(lit("Unknown"))
-        )
+        .withColumn("pickup_month", date_format(col("pickup_datetime"), "yyyy-MM"))
     
     # Deduplicate
     window_spec = Window.partitionBy("trip_id").orderBy(col("_ingested_at").desc())
@@ -130,7 +123,7 @@ def transform_trips():
         "trip_id", "taxi_type", "vendor_id", "pickup_datetime", "dropoff_datetime",
         "trip_duration_minutes", "passenger_count", "trip_distance_miles", "trip_distance_km",
         "rate_code", "store_and_fwd", "pu_location_id", "do_location_id", "payment_type",
-        "payment_type_desc", "fare_amount", "extra", "mta_tax", "tip_amount", "tolls_amount",
+        "fare_amount", "extra", "mta_tax", "tip_amount", "tolls_amount",
         "improvement_surcharge", "congestion_surcharge", "airport_fee", "total_amount",
         "trip_type", "pickup_date", "pickup_hour", "pickup_day_of_week", "is_weekend", "pickup_month"
     )
