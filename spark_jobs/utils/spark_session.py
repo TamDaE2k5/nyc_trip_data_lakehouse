@@ -22,6 +22,12 @@ def getOrCreateSparkSession():
             .config("spark.sql.catalog.lakehouse.s3.region", "us-east-1") \
             .config("spark.sql.catalog.lakehouse.client.region", "us-east-1") \
             .config("spark.sql.catalog.lakehouse.warehouse", "s3a://warehouse") \
-            .config("spark.sql.defaultCatalog", "lakehouse")
+            .config("spark.sql.defaultCatalog", "lakehouse") \
+            .config("spark.hadoop.fs.s3a.access.key", S3_ACCESS_KEY) \
+            .config("spark.hadoop.fs.s3a.secret.key", S3_SECRET_KEY) \
+            .config("spark.hadoop.fs.s3a.endpoint", S3_ENDPOINT) \
+            .config("spark.hadoop.fs.s3a.path.style.access", "true") \
+            .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+            .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
     
     return spark.getOrCreate()

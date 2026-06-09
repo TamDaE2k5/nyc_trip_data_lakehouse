@@ -78,7 +78,7 @@ with DAG(
     tags=['lakehouse'],
 ) as dag:
     
-    # init_tables -> [ingestion] -> transform_trip -> [load_zones, transform_rate_history]
+    # init_tables -> [ingestion] -> transform_trip -> [load_zones, transform_rate_history] -> [gold_aggs] -> cleanup
 
     init_tables = create_spark_task('init_tables', 'scripts/init_tables.py', dag)
 
@@ -91,15 +91,22 @@ with DAG(
     load_payment_types = create_spark_task('load_payment_types', 'silver/load_payment_types.py', dag)
     load_rate_codes = create_spark_task('load_rate_codes', 'silver/load_rate_codes.py', dag)
 
+    # Gold layer aggregations
+    agg_hourly_demand = create_spark_monthly_task('agg_hourly_demand', 'gold/agg_hourly_demand.py', dag)
+    agg_revenue_by_zone = create_spark_monthly_task('agg_revenue_by_zone', 'gold/agg_revenue_by_zone.py', dag)
+    agg_tip_analysis = create_spark_monthly_task('agg_tip_analysis', 'gold/agg_tip_analysis.py', dag)
 
-    init_tables >> ingest_green
-    init_tables >> ingest_yellow
+    # Cleanup maintenance task
+    cleanup_snapshots = create_spark_task('cleanup_snapshots', 'scripts/cleanup_snapshots.py', dag)
 
-    ingest_green >> transform_trips
-    ingest_yellow >> transform_trips
+    # Task dependencies definition
+    init_tables >> [ingest_green, ingest_yellow] >> transform_trips 
 
-    transform_trips >> load_zones
-    transform_trips >> transform_rate_history
-    transform_trips >> load_payment_types
-    transform_trips >> load_rate_codes
+    transform_trips >> [load_zones, transform_rate_history, load_payment_types, load_rate_codes]
+
+    for task in [load_zones, transform_rate_history, load_payment_types, load_rate_codes]:
+        task >> [agg_hourly_demand, agg_revenue_by_zone, agg_tip_analysis]
+
+    [agg_hourly_demand, agg_revenue_by_zone, agg_tip_analysis] >> cleanup_snapshots
+
 

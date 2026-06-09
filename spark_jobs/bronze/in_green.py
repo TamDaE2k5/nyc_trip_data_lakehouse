@@ -10,7 +10,7 @@ def ingest_green():
     year = int(x)
     month = int(y)
 
-    month -= 4
+    month -= 3
     if month <= 0:
         month += 12
         year -= 1
@@ -48,6 +48,6 @@ def ingest_green():
         df_final = df_meta.select(*target_columns)
         df_final = df_final.filter(col('pickup_month') == process_month)
         df_final.writeTo("bronze.green_trips").append()
-        # df_final.writeTo("bronze.green_trips").overwritePartitions() -> use -> fix incremental processing
+        df_final.writeTo("bronze.green_trips").overwritePartitions() #-> use -> fix incremental processing
 if __name__ =='__main__':
     ingest_green()

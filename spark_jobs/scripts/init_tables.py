@@ -170,6 +170,59 @@ def init_tables_lakehouse():
         (6, 'Group ride')
         """)
 
+    # 3. Create Gold Tables
+    # Create gold.dm_revenue_by_zone
+    spark.sql("""
+    CREATE TABLE IF NOT EXISTS gold.dm_revenue_by_zone (
+        analysis_month          STRING,
+        borough                 STRING,
+        zone                    STRING,
+        taxi_type               STRING,
+        total_trips             BIGINT,
+        total_revenue           DOUBLE,
+        total_tips              DOUBLE,
+        avg_revenue_per_trip    DOUBLE,
+        revenue_rank            INT
+    ) USING iceberg
+    PARTITIONED BY (analysis_month)
+    """)
+
+    # Create gold.dm_hourly_demand
+    spark.sql("""
+    CREATE TABLE IF NOT EXISTS gold.dm_hourly_demand (
+        analysis_date           DATE,
+        pickup_hour             INT,
+        taxi_type               STRING,
+        borough                 STRING,
+        total_trips             BIGINT,
+        avg_trip_distance_km    DOUBLE,
+        avg_trip_duration_min   DOUBLE,
+        avg_fare                DOUBLE,
+        peak_zone               STRING,
+        peak_zone_trips         BIGINT,
+        pickup_month            STRING
+    ) USING iceberg
+    PARTITIONED BY (pickup_month)
+    """)
+
+    # Create gold.dm_tip_analysis
+    spark.sql("""
+    CREATE TABLE IF NOT EXISTS gold.dm_tip_analysis (
+        analysis_month          STRING,
+        taxi_type               STRING,
+        payment_type_desc       STRING,
+        borough                 STRING,
+        total_trips             BIGINT,
+        trips_with_tip          BIGINT,
+        tip_rate_pct            DOUBLE,
+        avg_tip_amount          DOUBLE,
+        avg_tip_pct             DOUBLE,
+        max_tip                 DOUBLE,
+        is_airport_trip         BOOLEAN
+    ) USING iceberg
+    PARTITIONED BY (analysis_month)
+    """)
+
 
 if __name__ == '__main__':
     init_tables_lakehouse()

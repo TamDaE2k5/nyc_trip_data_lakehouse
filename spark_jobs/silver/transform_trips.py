@@ -17,7 +17,7 @@ def transform_trips():
         year = int(x)
         month = int(y)
 
-        month -= 4
+        month -= 3
         if month <= 0:
             month += 12
             year -= 1
