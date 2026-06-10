@@ -15,7 +15,7 @@ def agg_hourly_demand():
     
     year = int(x)
     month = int(y)
-    month-=3
+    month-=1
     if month <= 0:
         month += 12
         year -= 1
